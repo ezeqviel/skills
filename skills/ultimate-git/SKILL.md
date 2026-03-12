@@ -1,11 +1,11 @@
 ---
 name: ultimate-git
-description: 'GitHub & Git operations specialist with opinionated workflows. Use when the user asks to create, review, or merge PRs, manage branches, create releases or tags, work with issues, configure GitHub Actions, manage repo settings, scaffold new repositories, or perform any gh CLI operation. Triggers on requests involving pull requests, branch strategy, releases, GitHub workflows, repo configuration, or conventional commits.'
+description: 'GitHub & Git operations specialist with opinionated workflows. Use when the user asks to create, review, or merge PRs, manage branches, create releases or tags, work with issues, configure GitHub Actions, manage repo settings, scaffold new repositories, or perform any gh CLI operation. Triggers on requests involving pull requests, branch strategy, releases, GitHub workflows, repo configuration, conventional commits, pushing code, committing changes, creating tags, reviewing PRs, stashing changes, git blame, git log, or git bisect. Also triggers on Spanish equivalents: commitear, pushear, subir cambios, crear PR, hacer merge, crear tag, crear repo, revisar PR, ramas, guardar cambios, ver historial.'
 ---
 
 # Ultimate Git
 
-Opinionated Git & GitHub workflow skill built on the `gh` CLI. Provides branch strategy, PR conventions, repo scaffolding, and CI setup.
+Opinionated Git & GitHub workflow skill built on the `gh` CLI. Provides branch strategy, PR conventions, repo scaffolding, and common workflows.
 
 ## Operating Rules
 
@@ -18,95 +18,61 @@ Opinionated Git & GitHub workflow skill built on the `gh` CLI. Provides branch s
 
 ## Branch Strategy
 
+Two modes — auto-detect before any branching or PR operation:
+
+```bash
+git branch -r | grep -q 'origin/develop' && echo "Gitflow" || echo "GitHub Flow"
+```
+
+**GitHub Flow** (no `develop` branch):
+```
+main ← production (protected, PR only)
+  feat/*  ← from main, PR to main
+  fix/*   ← from main, PR to main
+```
+
+**Gitflow** (`develop` branch exists):
 ```
 main         ← releases + tags (protected, PR only)
   develop    ← stable dev (protected, PR only)
-    feat/*   ← features (from develop, PR to develop)
-    fix/*    ← bugfixes (from develop, PR to develop)
-    hotfix/* ← urgent (from main, PR to main + develop)
+    feat/*   ← from develop, PR to develop
+    fix/*    ← from develop, PR to develop
+    hotfix/* ← from main, PR to main + develop
 ```
 
-## Workflows
+For detailed workflows per strategy (feature, release, hotfix), see [references/branch-strategies.md](references/branch-strategies.md).
 
-### New Feature
+## Merging a PR
 
-```bash
-git checkout develop && git pull origin develop
-git checkout -b feat/feature-name
-# ... work + commit using Conventional Commits ...
-git push -u origin feat/feature-name
-gh pr create --base develop --title "feat(scope): description" --body "$(cat <<'EOF'
-## What changed
-- Bullet list of concrete changes
+Before merging, review commit history: `git log --oneline BASE..HEAD`
 
-## Why
-- Business/technical reason
-
-## Impact
-- What works differently now
-EOF
-)"
-```
-
-#### Merging a PR (MANDATORY — use AskUserQuestion)
-
-Before merging, check the target branch and review commit history with `git log --oneline BASE..HEAD`. Then use `AskUserQuestion` to let the user choose the merge strategy.
-
-Recommendation logic (first option = recommended):
-
-- **PR to main** (release/hotfix): always recommend `--merge` (preserves full history of what went into the release)
-- **PR to develop with clean commits** (each commit is a logical unit with a good message): recommend `--merge`
-- **PR to develop with messy commits** (WIP, fix typo, wip again, etc.): recommend `--squash`
+Use `AskUserQuestion` to let the user choose the merge strategy. Always explain the reasoning behind each option:
 
 ```
 header: "Merge strategy"
 question: "How to merge PR #NUM? (X commits: [summarize commit quality])"
 options:
-- { label: "[Recommended]", description: "..." }
-- { label: "[Other option]", description: "..." }
+- { label: "--merge (Recommended)", description: "Preserves the full commit history — useful for traceability and understanding what happened" }
+- { label: "--squash", description: "Condenses all commits into one clean commit — useful when the intermediate history (wip, fix typo, etc.) doesn't add value" }
 ```
+
+Default recommendation is `--merge`. Only suggest `--squash` first when commits are clearly messy (wip, wip2, fix typo, aaa, etc.).
 
 Then run: `gh pr merge PR_NUM --[strategy] --delete-branch`
 
-### Release
+## Repo Init
 
-```bash
-git checkout main && git pull origin main
-git merge develop
-git push origin main
-gh release create vX.Y.Z --target main --generate-notes --title "vX.Y.Z"
-```
-
-### Hotfix
-
-```bash
-git checkout main && git pull origin main
-git checkout -b hotfix/fix-name
-# ... fix + commit ...
-git push -u origin hotfix/fix-name
-gh pr create --base main --title "fix: hotfix description" --body "$(cat <<'EOF'
-## What changed
-- Description of the fix
-
-## Why
-- Urgency / impact of the bug
-
-## Impact
-- What this resolves
-EOF
-)"
-# After merge to main, also merge main back to develop
-```
-
-## Repo Init Workflow
-
-1. **Ask**: Language? Test command? Install command?
-2. **Init**: `git init && git checkout -b main && git checkout -b develop`
+1. **Ask**: Language? Test command? Install command? Public or private? GitHub Flow or Gitflow?
+2. **Init**: `git init && git checkout -b main` (+ `git checkout -b develop` if Gitflow)
 3. **Generate**: `.gitignore` (language-appropriate) + `.github/workflows/ci.yml` (see [references/ci-templates.md](references/ci-templates.md))
 4. **Commit**: `git add -A && git commit -m "chore: initial project scaffold"`
-5. **Remote**: `gh repo create NAME --source=. --push --public`
-6. **Default branch**: `gh api repos/{owner}/{repo} --method PATCH -f default_branch=develop`
-7. **Protection**: Apply rules for main and develop (see [references/branch-protection.md](references/branch-protection.md))
+5. **Remote**: `gh repo create NAME --source=. --push --public|--private`
+6. **Default branch**: if Gitflow, `gh api repos/{owner}/{repo} --method PATCH -f default_branch=develop`
+7. **Protection**: Apply rules for main (and develop if Gitflow). See [references/branch-protection.md](references/branch-protection.md)
+
+## Common Workflows
+
+For issues, PR review, stash, and investigation (log/blame/bisect), see [references/workflows.md](references/workflows.md).
 
 ## Error Resolution
 
