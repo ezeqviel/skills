@@ -105,6 +105,43 @@ Triangulation answers the question: "Do I need to generalize this code, or is th
 
 Use triangulation deliberately — it's how you avoid both over-engineering (generalizing too early) and under-engineering (leaving hardcoded values that should be logic).
 
+## Isolating Collaborators
+
+When the SUT has collaborators, default to **classic TDD**: real objects when they're cheap, a double only for the awkward edges (I/O, network, clock, non-determinism). Doubling every collaborator ("mockist" TDD) couples tests to *how* the code calls out, so behavior-preserving refactors break them.
+
+- **Verify by state, not by calls.** Exercise the SUT and assert on the result or final state. Reserve behavior verification (a real mock — "was it called?") for when the call *is* the contract (e.g. "must not touch an RLS-bypassing client when unauthorized" is a security guarantee, not an implementation detail).
+- **Double the output, not the shape.** Stub the high-level result of a collaborator, not its fluent call chain (`from().select().eq()`). Mocking the shape rebreaks on behavior-preserving refactors.
+- **Faithful over flexible.** A double that answers anything (an auto-attribute `MagicMock`) stops failing when it should. Prefer one that only has what you declared — `SimpleNamespace`, a dataclass, an explicit fake.
+- **Real objects for pure logic.** Validators, mappers, pure functions need no double. Double the edge, not the logic.
+
+Vocabulary (Meszaros / Fowler) — "mock" is one of five doubles, not all of them:
+
+| Double | Is | Verify by |
+|--------|-----|-----------|
+| Dummy | fills a param slot, never used | — |
+| Fake | working impl with a shortcut (in-memory DB) | state |
+| Stub | canned answers | state |
+| Spy | stub that also records how it was called | state |
+| Mock | pre-set expectations; fails if calls don't match | behavior |
+
+Full taxonomy, quotes, and sources: [references/test-doubles.md](references/test-doubles.md).
+
+## Choosing Direction
+
+London, Chicago, and Buenos Aires are three schools of TDD that answer the same question from different angles: **where do I start, and which way do I grow?**
+
+Default to outside-in for vertical user-visible behavior, inside-out for isolated domain behavior, and a hybrid middle-out double loop for most production features. Use mocks because a boundary is awkward or an interaction *is* behavior — not merely because another class exists.
+
+| School | Direction | Style | Best when |
+|--------|-----------|-------|-----------|
+| **London** | Outside-In | Mockist, behavior-based | User-facing features, APIs, event consumers — anything with an external contract |
+| **Chicago** | Inside-Out | Classicist, state-based | Domain rules, algorithms, parsers, state machines — logic that stands alone |
+| **Buenos Aires** | Middle-Out | Hybrid double loop | Most production features — acceptance test drives direction, inner cycles give fast feedback |
+
+The pragmatic default is the **middle-out double loop**: write one outer acceptance/component test, keep it red, descend with inner RED–GREEN–REFACTOR cycles where each failure points, then make the outer test green. The outer test measures progress; inner tests provide fast design feedback.
+
+Full decision table, loops step-by-step, walking skeleton, and boundary coverage rules: [references/tdd-schools.md](references/tdd-schools.md).
+
 ## Test Naming
 
 Test names should describe **behavior**, not implementation details.
@@ -166,3 +203,5 @@ For full detection logic and conventions per framework, see [references/framewor
 | Skipping test execution ("it should pass") | Always run. Surprises are where bugs hide |
 | Over-engineering in GREEN | Apply Transformation Priority Premise — use the simplest change |
 | Generalizing after one test | Use triangulation — wait for a second test to force generalization |
+| Mocking every collaborator | Use real objects for logic; double only awkward edges. Over-mocking couples tests to implementation |
+| Asserting on calls when state would do | Verify by state; reserve behavior verification for when the call *is* the contract |
