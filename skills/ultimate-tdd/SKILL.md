@@ -13,9 +13,7 @@ Build features test-first through disciplined RED-GREEN-REFACTOR cycles. Each cy
 2. **One test at a time** — never write multiple tests before seeing them fail.
 3. **Minimal production code** — write only what the current failing test demands. Nothing more.
 4. **Respect existing structure** — before creating test files, find where tests already live. If a test file exists for the module you're working on, add to it.
-5. **No automatic commits** — the user decides when to commit.
-6. **Phase names stay out of git** — RED, GREEN, REFACTOR are useful conversation terms, but commit messages should describe actual changes (e.g. "add email validation", not "RED: write failing test for email").
-7. **Not for retroactive testing** — this skill is for building new functionality test-first. Adding tests to existing untested code is a different activity.
+5. **Not for retroactive testing** — this skill is for building new functionality test-first. Adding tests to existing untested code is a different activity.
 
 ## Phase 0: Project Reconnaissance
 
