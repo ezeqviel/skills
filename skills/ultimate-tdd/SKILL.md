@@ -111,7 +111,7 @@ Use triangulation deliberately — it's how you avoid both over-engineering (gen
 
 When the SUT has collaborators, default to **classic TDD**: real objects when they're cheap, a double only for the awkward edges (I/O, network, clock, non-determinism). Doubling every collaborator ("mockist" TDD) couples tests to *how* the code calls out, so behavior-preserving refactors break them.
 
-- **Verify by state, not by calls.** Exercise the SUT and assert on the result or final state. Reserve behavior verification (a real mock — "was it called?") for when the call *is* the contract (e.g. "must not touch an RLS-bypassing client when unauthorized" is a security guarantee, not an implementation detail).
+- **Verify by state, not by calls.** Exercise the SUT and assert on the result or final state, observed through the public interface — not through a side channel such as reading the storage the code wrote to or inspecting private fields (after `createUser`, read back with `getUser`). The exception is a seam whose agreed contract *is* the persisted state: there, reading it is the assertion. Reserve behavior verification (a real mock — "was it called?") for when the call *is* the contract (e.g. "must not touch an RLS-bypassing client when unauthorized" is a security guarantee, not an implementation detail).
 - **Double the output, not the shape.** Stub the high-level result of a collaborator, not its fluent call chain (`from().select().eq()`). Mocking the shape rebreaks on behavior-preserving refactors.
 - **Faithful over flexible.** A double that answers anything (an auto-attribute `MagicMock`) stops failing when it should. Prefer one that only has what you declared — `SimpleNamespace`, a dataclass, an explicit fake.
 - **Real objects for pure logic.** Validators, mappers, pure functions need no double. Double the edge, not the logic.
@@ -209,3 +209,4 @@ For full detection logic and conventions per framework, see [references/framewor
 | Generalizing after one test | Use triangulation — wait for a second test to force generalization |
 | Mocking every collaborator | Use real objects for logic; double only awkward edges. Over-mocking couples tests to implementation |
 | Asserting on calls when state would do | Verify by state; reserve behavior verification for when the call *is* the contract |
+| Verifying through a side channel (querying storage directly, reading private fields) | Read back through the module's own interface; read storage directly only when the persisted state is the agreed seam |
