@@ -13,9 +13,7 @@ Build features test-first through disciplined RED-GREEN-REFACTOR cycles. Each cy
 2. **One test at a time** — never write multiple tests before seeing them fail.
 3. **Minimal production code** — write only what the current failing test demands. Nothing more.
 4. **Respect existing structure** — before creating test files, find where tests already live. If a test file exists for the module you're working on, add to it.
-5. **No automatic commits** — the user decides when to commit.
-6. **Phase names stay out of git** — RED, GREEN, REFACTOR are useful conversation terms, but commit messages should describe actual changes (e.g. "add email validation", not "RED: write failing test for email").
-7. **Not for retroactive testing** — this skill is for building new functionality test-first. Adding tests to existing untested code is a different activity.
+5. **Not for retroactive testing** — this skill is for building new functionality test-first. Adding tests to existing untested code is a different activity.
 
 ## Phase 0: Project Reconnaissance
 
@@ -27,7 +25,9 @@ Before writing any test, understand the project's testing setup. This runs once 
 
 3. **Check for existing tests on the target module.** If you're adding a feature to `src/auth/login.ts`, search for `login.test.ts`, `login.spec.ts`, or similar. If one exists, you'll add your tests there.
 
-4. **If anything is unclear — ask.** Don't guess where tests should go. Ask the user.
+4. **Agree the seams.** A seam is the public boundary a test exercises. If the spec, ticket or plan names them, use those. Otherwise propose each seam with one line on what it catches and what it misses, and confirm the list once before the first RED. Tests only go at agreed seams — testing everything is not the goal, testing the boundaries that carry the behavior is.
+
+5. **If anything is unclear — ask.** Don't guess where tests should go. Ask the user.
 
 ## The Cycle
 
@@ -39,7 +39,7 @@ After reconnaissance, repeat these three phases for each behavior you need to im
 2. Write exactly **one test** following the Arrange-Act-Assert pattern:
    - **Arrange** — set up test data and dependencies
    - **Act** — call the code under test
-   - **Assert** — verify the expected outcome
+   - **Assert** — verify the expected outcome, taken from an independent source: a known literal, a worked example, the spec. Never derive it from the code under test — a test that computes its expectation the way the code does can never disagree with it.
 3. Run the test suite.
 4. Verify the test fails **for the expected reason** — a missing function, a wrong return value, an unmet condition. Not a syntax error, not an import failure, not a misconfigured test runner.
 5. If it fails for the wrong reason, fix the infrastructure problem first and re-run. The test must fail because the behavior doesn't exist yet, not because the test itself is broken.
@@ -75,9 +75,10 @@ Look for:
 - **Duplication** — extract shared code
 - **Unclear names** — rename to reveal intent
 - **Unnecessary complexity** — simplify logic
-- **Structural issues** — improve organization
+- **Structural issues** — improve the organization of what this cycle touched
 
 Rules:
+- Scope: only the code written or touched in this cycle — names, a duplication this cycle introduced. Restructuring across modules belongs to a separate review pass, not the cycle.
 - One small change at a time.
 - Run all tests after each change.
 - If a test fails after refactoring, revert and try a smaller change.
@@ -109,10 +110,11 @@ Use triangulation deliberately — it's how you avoid both over-engineering (gen
 
 When the SUT has collaborators, default to **classic TDD**: real objects when they're cheap, a double only for the awkward edges (I/O, network, clock, non-determinism). Doubling every collaborator ("mockist" TDD) couples tests to *how* the code calls out, so behavior-preserving refactors break them.
 
-- **Verify by state, not by calls.** Exercise the SUT and assert on the result or final state. Reserve behavior verification (a real mock — "was it called?") for when the call *is* the contract (e.g. "must not touch an RLS-bypassing client when unauthorized" is a security guarantee, not an implementation detail).
+- **Verify by state, not by calls.** Exercise the SUT and assert on the result or final state, observed through the public interface — not through a side channel such as reading the storage the code wrote to or inspecting private fields (after `createUser`, read back with `getUser`). The exception is a seam whose agreed contract *is* the persisted state: there, reading it is the assertion. Reserve behavior verification (a real mock — "was it called?") for when the call *is* the contract (e.g. "must not call the privileged client when the caller isn't authorized" is a security guarantee, not an implementation detail).
 - **Double the output, not the shape.** Stub the high-level result of a collaborator, not its fluent call chain (`from().select().eq()`). Mocking the shape rebreaks on behavior-preserving refactors.
 - **Faithful over flexible.** A double that answers anything (an auto-attribute `MagicMock`) stops failing when it should. Prefer one that only has what you declared — `SimpleNamespace`, a dataclass, an explicit fake.
 - **Real objects for pure logic.** Validators, mappers, pure functions need no double. Double the edge, not the logic.
+- **When the behavior is the query, the database is not an edge.** Doubling it makes the test restate the query, so it can never fail for the reason the code would. Test that code against a real, disposable instance that the test run creates and tears down; it stays hermetic as long as it shares no state with other environments. See [Required Boundary Coverage](references/tdd-schools.md#required-boundary-coverage).
 
 Vocabulary (Meszaros / Fowler) — "mock" is one of five doubles, not all of them:
 
@@ -138,7 +140,7 @@ Default to outside-in for vertical user-visible behavior, inside-out for isolate
 | **Chicago** | Inside-Out | Classicist, state-based | Domain rules, algorithms, parsers, state machines — logic that stands alone |
 | **Buenos Aires** | Middle-Out | Hybrid double loop | Most production features — acceptance test drives direction, inner cycles give fast feedback |
 
-The pragmatic default is the **middle-out double loop**: write one outer acceptance/component test, keep it red, descend with inner RED–GREEN–REFACTOR cycles where each failure points, then make the outer test green. The outer test measures progress; inner tests provide fast design feedback.
+The pragmatic default is the **middle-out double loop**: write one outer acceptance/component test at an agreed seam, keep it red, descend with inner RED–GREEN–REFACTOR cycles where each failure points, then make the outer test green. The outer test measures progress; inner tests provide fast design feedback.
 
 Full decision table, loops step-by-step, walking skeleton, and boundary coverage rules: [references/tdd-schools.md](references/tdd-schools.md).
 
@@ -201,7 +203,10 @@ For full detection logic and conventions per framework, see [references/framewor
 | Writing "clever" code in GREEN | Write dumb, obvious code. Cleverness comes in REFACTOR |
 | Creating a new test file when one exists | Find the existing test file for that module and add to it |
 | Skipping test execution ("it should pass") | Always run. Surprises are where bugs hide |
+| Recomputing the expected value the way the code does (`expect(sum(xs)).toBe(xs.reduce(...))`) | Assert against a known literal or a worked example — the test must be able to disagree with the code |
+| Running the code and pasting its output as the expected value | Derive the expectation by hand or from the spec; a pasted output enshrines whatever bug is in it |
 | Over-engineering in GREEN | Apply Transformation Priority Premise — use the simplest change |
 | Generalizing after one test | Use triangulation — wait for a second test to force generalization |
 | Mocking every collaborator | Use real objects for logic; double only awkward edges. Over-mocking couples tests to implementation |
 | Asserting on calls when state would do | Verify by state; reserve behavior verification for when the call *is* the contract |
+| Verifying through a side channel (querying storage directly, reading private fields) | Read back through the module's own interface; read storage directly only when the persisted state is the agreed seam |
