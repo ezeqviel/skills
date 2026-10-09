@@ -41,7 +41,7 @@ After reconnaissance, repeat these three phases for each behavior you need to im
 2. Write exactly **one test** following the Arrange-Act-Assert pattern:
    - **Arrange** — set up test data and dependencies
    - **Act** — call the code under test
-   - **Assert** — verify the expected outcome
+   - **Assert** — verify the expected outcome, taken from an independent source: a known literal, a worked example, the spec. Never derive it from the code under test — a test that computes its expectation the way the code does can never disagree with it.
 3. Run the test suite.
 4. Verify the test fails **for the expected reason** — a missing function, a wrong return value, an unmet condition. Not a syntax error, not an import failure, not a misconfigured test runner.
 5. If it fails for the wrong reason, fix the infrastructure problem first and re-run. The test must fail because the behavior doesn't exist yet, not because the test itself is broken.
@@ -203,6 +203,8 @@ For full detection logic and conventions per framework, see [references/framewor
 | Writing "clever" code in GREEN | Write dumb, obvious code. Cleverness comes in REFACTOR |
 | Creating a new test file when one exists | Find the existing test file for that module and add to it |
 | Skipping test execution ("it should pass") | Always run. Surprises are where bugs hide |
+| Recomputing the expected value the way the code does (`expect(sum(xs)).toBe(xs.reduce(...))`) | Assert against a known literal or a worked example — the test must be able to disagree with the code |
+| Running the code and pasting its output as the expected value | Derive the expectation by hand or from the spec; a pasted output enshrines whatever bug is in it |
 | Over-engineering in GREEN | Apply Transformation Priority Premise — use the simplest change |
 | Generalizing after one test | Use triangulation — wait for a second test to force generalization |
 | Mocking every collaborator | Use real objects for logic; double only awkward edges. Over-mocking couples tests to implementation |
