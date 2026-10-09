@@ -77,9 +77,10 @@ Look for:
 - **Duplication** — extract shared code
 - **Unclear names** — rename to reveal intent
 - **Unnecessary complexity** — simplify logic
-- **Structural issues** — improve organization
+- **Structural issues** — improve the organization of what this cycle touched
 
 Rules:
+- Scope: only the code written or touched in this cycle — names, a duplication this cycle introduced. Restructuring across modules belongs to a separate review pass, not the cycle.
 - One small change at a time.
 - Run all tests after each change.
 - If a test fails after refactoring, revert and try a smaller change.
