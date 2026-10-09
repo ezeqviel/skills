@@ -48,8 +48,8 @@ The distinction that really matters isn't between objects, but between **how you
 > state verification."*
 
 Rule of thumb: verify by **state** by default (more robust against refactors); reserve
-**behavior** verification for when the call itself is the contract — e.g. "don't touch an
-RLS-bypassing client when the role isn't authorized" is a security guarantee, not an
+**behavior** verification for when the call itself is the contract — e.g. "don't call the
+privileged client when the caller isn't authorized" is a security guarantee, not an
 implementation detail.
 
 ---
