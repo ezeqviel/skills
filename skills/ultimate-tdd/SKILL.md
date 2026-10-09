@@ -115,6 +115,7 @@ When the SUT has collaborators, default to **classic TDD**: real objects when th
 - **Double the output, not the shape.** Stub the high-level result of a collaborator, not its fluent call chain (`from().select().eq()`). Mocking the shape rebreaks on behavior-preserving refactors.
 - **Faithful over flexible.** A double that answers anything (an auto-attribute `MagicMock`) stops failing when it should. Prefer one that only has what you declared — `SimpleNamespace`, a dataclass, an explicit fake.
 - **Real objects for pure logic.** Validators, mappers, pure functions need no double. Double the edge, not the logic.
+- **When the behavior is the query, the database is not an edge.** Doubling it makes the test restate the query, so it can never fail for the reason the code would. Test that code against a real, disposable instance that the test run creates and tears down; it stays hermetic as long as it shares no state with other environments. See [Required Boundary Coverage](references/tdd-schools.md#required-boundary-coverage).
 
 Vocabulary (Meszaros / Fowler) — "mock" is one of five doubles, not all of them:
 
