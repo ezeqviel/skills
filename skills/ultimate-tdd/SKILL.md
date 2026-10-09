@@ -27,7 +27,9 @@ Before writing any test, understand the project's testing setup. This runs once 
 
 3. **Check for existing tests on the target module.** If you're adding a feature to `src/auth/login.ts`, search for `login.test.ts`, `login.spec.ts`, or similar. If one exists, you'll add your tests there.
 
-4. **If anything is unclear — ask.** Don't guess where tests should go. Ask the user.
+4. **Agree the seams.** A seam is the public boundary a test exercises. If the spec, ticket or plan names them, use those. Otherwise propose each seam with one line on what it catches and what it misses, and confirm the list once before the first RED. Tests only go at agreed seams — testing everything is not the goal, testing the boundaries that carry the behavior is.
+
+5. **If anything is unclear — ask.** Don't guess where tests should go. Ask the user.
 
 ## The Cycle
 
@@ -138,7 +140,7 @@ Default to outside-in for vertical user-visible behavior, inside-out for isolate
 | **Chicago** | Inside-Out | Classicist, state-based | Domain rules, algorithms, parsers, state machines — logic that stands alone |
 | **Buenos Aires** | Middle-Out | Hybrid double loop | Most production features — acceptance test drives direction, inner cycles give fast feedback |
 
-The pragmatic default is the **middle-out double loop**: write one outer acceptance/component test, keep it red, descend with inner RED–GREEN–REFACTOR cycles where each failure points, then make the outer test green. The outer test measures progress; inner tests provide fast design feedback.
+The pragmatic default is the **middle-out double loop**: write one outer acceptance/component test at an agreed seam, keep it red, descend with inner RED–GREEN–REFACTOR cycles where each failure points, then make the outer test green. The outer test measures progress; inner tests provide fast design feedback.
 
 Full decision table, loops step-by-step, walking skeleton, and boundary coverage rules: [references/tdd-schools.md](references/tdd-schools.md).
 
